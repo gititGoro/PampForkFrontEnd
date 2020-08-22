@@ -31,7 +31,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "generate-types:truffle": "typechain --target=truffle-v5 --outDir=typechain-types/truffle 'ABIs/*.json'",
-    "generate-types:ethers": "typechain --target=ethers-v5 --outDir=typechain-types/ethers 'ABIs/*.json'"
+    "generate-types:ethers": "typechain --target=ethers-v5 --outDir=src/blockchain/typechain-types/ethers 'ABIs/*.json'"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -1,5 +1,7 @@
 {
     "kovan": {
+        "PampToken":"0xC80D0d28fF0a2F1881057Ad672cf8B2FD1020d34",
+        "Stake":"0xC80D0d28fF0a2F1881057Ad672cf8B2FD1020d34",
         "LendingPoolAddressesProvider": "0xde8dfEaD049E18B01a0940E5f2F43175309E3abC",
         "MockFlashLoadnReceiver": "0x792c2aadB101Ee3C3F3D9487F2E899DdE8A34e27",
         "MockAggregatorBat": "0x2D49d05B28533365F24E0FA0FF481A18C8178c32",

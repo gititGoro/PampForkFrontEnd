@@ -53,6 +53,8 @@ export * from "./MockUsdcFactory";
 export * from "./MockUsdtFactory";
 export * from "./MockWbtcFactory";
 export * from "./MockZrxFactory";
+export * from "./PampStakingFactory";
+export * from "./PampTokenFactory";
 export * from "./PriceOracleFactory";
 export * from "./TokenDistributorFactory";
 export * from "./UintStorageFactory";
