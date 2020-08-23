@@ -25,8 +25,12 @@ import {TokenDistributor} from './typechain-types/ethers/TokenDistributor'
 import {LendingPoolParametersProvider} from './typechain-types/ethers/LendingPoolParametersProvider'
 import {LendingPoolAddressesProvider} from './typechain-types/ethers/LendingPoolAddressesProvider'
 import {Erc20} from './typechain-types/ethers/Erc20'
+import {PampToken} from './typechain-types/ethers/PampToken'
+import {StakePampToken} from  './typechain-types/ethers/StakePampToken'
 
 export default interface Contracts {
+    Token:PampToken,
+    Stake:StakePampToken,
     MockFlashLoadnReceiver: MockFlashLoanReceiver
     MockAggregatorBat:MockAggregatorBat
     MockAggregatorDai:MockAggregatorDai

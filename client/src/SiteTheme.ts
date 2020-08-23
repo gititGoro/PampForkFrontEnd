@@ -47,7 +47,7 @@ const theme = createMuiTheme({
         contrastText: "orange"
     },
     componentBackground: {
-        light: "linear-gradient(to bottom, #C00BA0, #00AAAA)",
+        light: "linear-gradient(to bottom, #4488CC, #FFD0FF)",
         main: "blue",
         dark: "#3A3952",
         contrastText: "orange"

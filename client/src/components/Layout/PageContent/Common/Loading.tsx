@@ -1,47 +1,40 @@
-import doge from '../../../../images/loadingdog.gif'
+import loading1 from '../../../../images/loading.gif'
+import loading2 from '../../../../images/juggler.gif'
+import loading3 from '../../../../images/gandalf.gif'
+import loading4 from '../../../../images/hodl.gif'
+import loading5 from '../../../../images/loading1.gif'
+import loading6 from '../../../../images/loading2.gif'
+import loading7 from '../../../../images/loading4.gif'
+import loading8 from '../../../../images/loading5.gif'
+import loading9 from '../../../../images/loading6.gif'
+import loading10 from '../../../../images/loading7.gif'
+import loading11 from '../../../../images/rogueVader.gif'
+
 import React from 'react';
 import {
     Grid,
-    createStyles,
-    makeStyles,
-    Typography,
 } from '@material-ui/core';
-const loadingStyles = makeStyles(theme => createStyles({
-    dogeText: {
-        color: theme.foregroundColor[theme.palette.type],
-        fontFamily: theme.standardFont.fontFamily
-    }
-}))
 
-const phrases = [
-    'Loading',
-    'Recharging flux capacitor',
-    'Inserting kyber crystals',
-    'Gazing into a Palintir',
-    'Reassembling the blockchain',
-    'Synthesizing quarks',
-    'Fusing atomic nuclei',
-    'Correcting spin gravity',
-    'Constructing alcubier drive',
-    'Contacting Satoshi Nakamoto',
-    'Resolving Fermi Paradox',
-    'Overriding Voi Kernel',
-    'Establishing rift to Kelewan',
-    'Stabilizing tokamak plasma field',
-    'Crossing the Helcaraxë',
-    'Retrieving the Horadric cube',
-    'Manufacturing Ringworld scrith',
-    'Installing Windows 95',
-    'Dissolving central banking',
-    'Requesting aide from Numenor',
-    'Lighting the beacons of Gondor'
+
+const loadingGifs = [
+    loading1,
+    loading2,
+    loading3,
+    loading4,
+    loading5,
+    loading6,
+    loading7,
+    loading8,
+    loading9,
+    loading10,
+    loading11,
 ]
 
 export default function Loading(props: { invisible?: boolean }) {
+
+    const loadingIndex = Math.floor(Math.random() * loadingGifs.length)
     if (props.invisible)
         return <div></div>
-    const classes = loadingStyles()
-    const phrase = phrases[Math.trunc(Math.random() * phrases.length)]
     return <Grid
         container
         direction="column"
@@ -51,12 +44,7 @@ export default function Loading(props: { invisible?: boolean }) {
     >
         <Grid item></Grid>
         <Grid item>
-            <img src={doge} width={200} />
-        </Grid>
-        <Grid item>
-            <Typography variant="h3" className={classes.dogeText}>
-                {phrase}....
-                </Typography>
+            <img src={loadingGifs[loadingIndex]} width={400} />
         </Grid>
     </Grid>
 }

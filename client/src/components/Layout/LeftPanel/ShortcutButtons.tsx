@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { useLocation, Redirect } from "react-router-dom";
-import { ListItem, ListItemIcon, Divider, makeStyles, createStyles, Theme } from '@material-ui/core'
-import AccountBalanceIcon from '@material-ui/icons/AccountBalance';
-import AutorenewIcon from '@material-ui/icons/Autorenew';
-import AddIcon from '@material-ui/icons/Add';
-import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
-
+import { ListItem, ListItemIcon, makeStyles, createStyles, Theme } from '@material-ui/core'
+import Staking from '../../../images/staking.png'
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         MenuItems: {
             fontFamily: theme.standardFont.fontFamily,
-            fontWeight: theme.standardFont.fontWeightMedium,
-            fontSize: theme.standardFont.fontSize,
+            fontWeight: theme.standardFont.fontWeightBold,
+            fontSize: theme.standardFont.fontSize + 1,
             color: "white",
             lineHeight: "16.8px",
             textTransform: "uppercase"
@@ -21,7 +17,8 @@ const useStyles = makeStyles((theme: Theme) =>
             '&:hover': {
                 backgroundColor: theme.listHoverColor[theme.palette.type],
             },
-            zIndex: 0
+            zIndex: 0,
+            paddingLeft:0
         },
         listItemSelected: {
             zIndex: 0,
@@ -29,9 +26,11 @@ const useStyles = makeStyles((theme: Theme) =>
             '&:hover': {
                 backgroundColor: theme.listHoverColor[theme.palette.type],
             },
+            paddingLeft:5
         }
         , icon: {
-            color: "white"
+            color: "green",
+           // marginRight: 10
         },
         divider: {
             background: "rgba(255,255,255,0.8)"
@@ -59,7 +58,7 @@ export default function ShortcutButtons(props: { expanded: boolean, isAdmin: boo
 
     const selectionFactory = classSetterFactory(classes.listItem, classes.listItemSelected)
     const classDecider = selectionFactory(location)
-    const [redirectURL, setRedirectURL] = useState<'' | 'deposit' | 'borrow' | 'liquidation' | 'admin'>("")
+    const [redirectURL, setRedirectURL] = useState<'' | 'staking'>("")
 
     if (location.pathname.length > 1 && location.pathname.substring(1) === redirectURL) {
         setRedirectURL('')
@@ -67,35 +66,12 @@ export default function ShortcutButtons(props: { expanded: boolean, isAdmin: boo
     const renderRedirect = redirectURL === '' ? '' : <Redirect to={'/' + redirectURL} />
     return <div className={classes.MenuItems}>
         {renderRedirect}
-        <ListItem className={classDecider("deposit")} button key="deposit" onClick={() => setRedirectURL('deposit')}>
+        <ListItem className={classDecider("staking")} button key="staking" onClick={() => setRedirectURL('staking')}>
             <ListItemIcon>
-                <AddIcon className={classes.icon} />
+                <img src={Staking} className={classes.icon} />
             </ListItemIcon>
-            {showText("deposit")}
+            {showText("Staking")}
         </ListItem>
-        <ListItem className={classDecider("borrow")} button key="Borrow" onClick={() => setRedirectURL('borrow')}>
-            <ListItemIcon>
-                <AccountBalanceIcon className={classes.icon} />
-            </ListItemIcon>
-            {showText("borrow")}
-        </ListItem>
-        <Divider className={classes.divider} />
-        <ListItem className={classDecider("liquidation")} button key="Liquidation" onClick={() => setRedirectURL('liquidation')}>
-            <ListItemIcon>
-                <AutorenewIcon className={classes.icon} />
-            </ListItemIcon>
-            {showText("liquidation")}
-        </ListItem>
-        {props.isAdmin ?
-            <div>
-                <Divider className={classes.divider} />
-                <ListItem className={classDecider("dashboard")} button key="dashboard" onClick={() => setRedirectURL('admin')}>
-                    <ListItemIcon>
-                        <DeveloperBoardIcon className={classes.icon} />
-                    </ListItemIcon>
-                    {showText("dashboard")}
-                </ListItem>
-            </div> : ""}
     </div>
 }
 

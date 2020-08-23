@@ -256,7 +256,12 @@ export async function GetContracts(signer: ethers.Signer, network: string): Prom
     let TokenDistributor = new contracts.TokenDistributorFactory(signer).attach(await lendingPoolAddressProvider.getTokenDistributor())
     let LendingPoolParametersProvider = new contracts.LendingPoolParametersProviderFactory(signer).attach(await lendingPoolAddressProvider.getLendingPoolParametersProvider())
 
+    let Token = new contracts.PampTokenFactory(signer).attach(addresses[network]["PampToken"])
+    let Stake = new contracts.PampStakingFactory(signer).attach(addresses[network]["Stake"])
+
     return {
+        Token,
+        Stake,
         LendingPoolAddressesProvider: lendingPoolAddressProvider,
         LendingPoolConfigurator,
         MockFlashLoadnReceiver,
