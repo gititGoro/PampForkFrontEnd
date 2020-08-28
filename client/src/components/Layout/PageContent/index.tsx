@@ -1,6 +1,6 @@
-import React, { useContext, useCallback, useEffect } from 'react';
+import React, { useContext } from 'react';
 import {
-    Route, Switch, Redirect, useLocation
+    Route, Switch, Redirect
 } from 'react-router-dom'
 
 import WalletNotConnected from './WalletNotConnected'
@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { EthereumContext } from 'src/components/contexts/EthereumContext';
 import { Loading } from './Common/index'
 import Staking from './Staking/index'
-
+import Dashboard from './Dashboard/index'
 const delayDuration = '300ms'
 const delayFunction = 'ease'
 
@@ -39,22 +39,6 @@ export default function PageContent(props: props) {
     const classes = useStyles()
     const [redirection, setRedirection] = useState<string>("")
 
-    const location = useLocation()
-
-    const hasDepositsCallback = useCallback(async () => {
-        if (ethereumContext.blockchain && location.pathname == '/') {
-            const blockchain = ethereumContext.blockchain
-            const userGlobalData = await blockchain.contracts.LendingPoolDataProvider.calculateUserGlobalData(blockchain.account)
-            if (!userGlobalData.totalCollateralBalanceETH.isZero()) {
-                setRedirection('/deposit')
-            }
-        }
-    }, [ethereumContext.blockchain])
-
-    useEffect(() => {
-        hasDepositsCallback()
-    }, [ethereumContext.blockchain])
-
     const renderRedirect = redirection !== '' ? <Redirect to={redirection} /> : ''
 
     React.useEffect(() => {
@@ -72,8 +56,11 @@ export default function PageContent(props: props) {
         return <div>
             {renderRedirect}
             <Switch>
-                <Route path='/'>
+                <Route path='/' exact>
                     <Staking />
+                </Route>
+                <Route path='/admin' exact>
+                    {props.isAdmin ? <Dashboard /> : <Redirect to="/" />}
                 </Route>
                 <Route path='/staking' exact>
                     <Staking />

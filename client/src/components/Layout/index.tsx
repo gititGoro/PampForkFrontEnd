@@ -3,7 +3,6 @@ import PageContent from './PageContent/index'
 import LeftPanel from './LeftPanel/index'
 import BottomPanel, { brightMode } from './BottomPanel'
 import { BrowserRouter } from 'react-router-dom'
-import { GetRole, Role } from '../../blockchain/EthereumAPI'
 import { EthereumContext } from '../contexts/EthereumContext'
 import { makeStyles, createStyles, Theme } from '@material-ui/core';
 interface props {
@@ -26,8 +25,8 @@ export default function Layout(props: props) {
 
     const adminCallBack = useCallback(async () => {
         if (ethereumContextProps.blockchain) {
-            const role = await GetRole(ethereumContextProps.blockchain.account, ethereumContextProps.blockchain.contracts)
-            setIsAdmin(role === Role.lendingPoolManager || role === Role.superAdmin || role === Role.addressesProviderOwner)
+            const owner = await ethereumContextProps.blockchain.contracts.Stake.owner()
+            setIsAdmin(owner.toLowerCase() === ethereumContextProps.blockchain.account.toLowerCase())
         } else
             setIsAdmin(false)
     }, [ethereumContextProps.blockchain?.account, ethereumContextProps.network, ethereumContextProps.connectionStatus])

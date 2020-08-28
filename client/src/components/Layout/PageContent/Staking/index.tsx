@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
     makeStyles,
     createStyles,
@@ -21,6 +21,8 @@ import AccountBalanceWalletIcon from '@material-ui/icons/AccountBalanceWallet';
 import TodayIcon from '@material-ui/icons/Today';
 import FreeBreakfastIcon from '@material-ui/icons/FreeBreakfast';
 import LocalAtmIcon from '@material-ui/icons/LocalAtm';
+import { EthereumContext } from 'src/components/contexts/EthereumContext';
+
 const useStyles = makeStyles(theme => createStyles({
     root: {
         display: 'flex',
@@ -86,12 +88,73 @@ const tokenSummaryStyles = makeStyles(theme => createStyles({
 }))
 
 
+const getDuration = (now: number, then: number): string => {
+    const minute = 60
+    const hour = 60 * minute
+    const day = 24 * hour
+    const week = 7 * day
+    const year = 52 * week
 
+    const duration = now - then
+    let timeSuffix = 'seconds'
+    let divisor = 1
+    if (duration >= year) {
+        timeSuffix = 'year'
+        divisor = year
+    } else if (duration >= week) {
+        timeSuffix = 'week'
+        divisor = week
+    } else if (duration >= day) {
+        timeSuffix = 'day'
+        divisor = day
+    } else if (duration >= hour) {
+        timeSuffix = 'hour'
+        divisor = hour
+    } else if (duration >= minute) {
+        timeSuffix = 'minute'
+        divisor = minute
+    }
+
+    const period = Math.floor(duration / divisor)
+    return `${period} ${timeSuffix}${period === 1 ? '' : 's'}`
+}
 
 function TokenSummary() {
+    const ethereumContextProps = useContext(EthereumContext)
     const classes = tokenSummaryStyles()
     const StyledCell = (props: { children: any }) => <TableCell className={classes.cell}>{props.children}</TableCell>
     const StyledDivider = () => <Divider className={classes.divider} variant='inset' />
+    const [hours, setHours] = useState<string>("")
+    const [price, setPrice] = useState<string>("")
+    const [volume, setVolume] = useState<string>("")
+    const [change, setChange] = useState<string>("")
+
+    const summaryCallback = useCallback(async () => {
+        if (ethereumContextProps.blockchain) {
+            const blockchain = ethereumContextProps.blockchain
+            const lastUpdate = await blockchain.contracts.Stake.lastUpdate()
+            const now = Math.round(new Date().getTime() / 1000);
+            setHours(getDuration(now, lastUpdate.timestamp.toNumber()))
+            setPrice('$' + lastUpdate.price.toString())
+            setVolume('$' + lastUpdate.volume)
+
+            const updateLength = blockchain.contracts.Stake.updates.length
+            if (updateLength > 1) {
+                const priorPrice = (await blockchain.contracts.Stake.updates(updateLength - 2)).price.toNumber()
+                if (priorPrice > 0) {
+                    setChange(`${(lastUpdate.price.toNumber() - priorPrice) / priorPrice} %`)
+                }
+            }
+        }
+    }, [ethereumContextProps.blockchain])
+
+    useEffect(() => {
+        summaryCallback()
+    }, [ethereumContextProps.blockchain])
+    /*
+    last rewards update stake.update(length)
+    last update: stake.update(length) for price, volume and change
+    */
     return <Grid
         container
         direction="column"
@@ -101,7 +164,7 @@ function TokenSummary() {
         className={classes.root}
     >
         <Grid item>
-            <Container className={classes.container}> Last rewards update: <span className={classes.bold}>41 hours</span></Container>
+            <Container className={classes.container}> Last rewards update: <span className={classes.bold}>{hours}</span></Container>
             <StyledDivider />
         </Grid>
         <Grid item>
@@ -124,14 +187,14 @@ function TokenSummary() {
                     <TableBody>
                         <TableRow>
                             <StyledCell>
-                                $ 1.257
-                        </StyledCell>
+                                {price}
+                            </StyledCell>
                             <StyledCell>
-                                $ 1236610
-                        </StyledCell>
+                                {volume}
+                            </StyledCell>
                             <StyledCell>
-                                14.000000000000002%
-                        </StyledCell>
+                                {change}
+                            </StyledCell>
                         </TableRow>
                     </TableBody>
                 </Table>
@@ -257,7 +320,7 @@ function MyStatistics() {
 const actionStyles = makeStyles(theme => createStyles({
     button: {
         background: 'linear-gradient(to bottom right, #D7D7D7, #00FF24)',
-        color: theme.foregroundColor[theme.palette.type]
+        color: '#FF006E'
     }
 }))
 

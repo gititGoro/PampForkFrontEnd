@@ -1,12 +1,8 @@
 import { ethers, BigNumber as ethersBigNumber } from "ethers"
-import ContractInstances, { ERC20 } from "./ContractInstances"
+import ContractInstances from "./ContractInstances"
 import *  as contracts from './typechain-types/ethers'
 import addresses from './deployedAddresses.json'
-import { LendingPoolCoreLibraryAddresses } from './typechain-types/ethers/LendingPoolCoreFactory'
 import BigNumber from "bignumber.js"
-import { AToken } from './typechain-types/ethers/AToken'
-import { PriceOracle } from './typechain-types/ethers/PriceOracle'
-import { Ierc20DetailedBytes } from './typechain-types/ethers/Ierc20DetailedBytes'
 
 // const RAY = new BigNumber(10).pow(27)
 const WAD = new BigNumber(10).pow(18)
@@ -77,25 +73,6 @@ export const WadMul = (lhs: ethersBigNumber, rhs: ethersBigNumber) => {
     return lhs.mul(rhs).div(WAD.toString())
 }
 
-export const ethValueOfReserve = async (asset: string, value: ethersBigNumber, blockchain: { contracts: ContractInstances, wallet: ethersMetamask }): Promise<string> => {
-    const oracle = await GetPriceOracle(blockchain.contracts, blockchain.wallet.signer)
-    const ethPriceOfAsset = await oracle.getAssetPrice(asset)
-    const decimals = bigNumberize((await blockchain.contracts.LendingPoolCore.getReserveConfiguration(asset))[0])
-    const magnitude = new BigNumber(10).pow(decimals).toString()
-    return weiToEthString(value.mul(magnitude).div(ethPriceOfAsset))
-}
-
-export const dollarValueOfReserve = async (asset: string, value: ethersBigNumber, blockchain: { contracts: ContractInstances, wallet: ethersMetamask }): Promise<string> => {
-    const oracle = await GetPriceOracle(blockchain.contracts, blockchain.wallet.signer)
-    const ethPriceOfAsset = await oracle.getAssetPrice(asset)
-    const dollarPriceOfEth = await oracle.getEthUsdPrice()
-    const decimals = bigNumberize((await blockchain.contracts.LendingPoolCore.getReserveConfiguration(asset))[0])
-    const magnitude = new BigNumber(10).pow(decimals).toString()
-    return weiToEthString(value.mul(dollarPriceOfEth).mul(magnitude).div(ethPriceOfAsset))
-}
-
-//TODO: dollar value
-
 export interface ethersMetamask {
     provider: ethers.providers.Web3Provider,
     signer: ethers.Signer
@@ -149,146 +126,17 @@ export function GetEthers(ethereum: injectedEthereum): ethersMetamask {
     }
 }
 
-export function LoadERC20(address: string, signer: ethers.Signer): ERC20 {
-    return new contracts.Erc20Factory(signer).attach(address)
-
-}
-
-export function LoadERC20Detailed(address: string, signer: ethers.Signer): Ierc20DetailedBytes {
-    return new contracts.Ierc20DetailedBytesFactory(signer).attach(address)
-}
-
-
-export function LoadAToken(address: string, signer: ethers.Signer): AToken {
-    return new contracts.ATokenFactory(signer).attach(address)
-}
-
-export async function GetPriceOracle(contractIntances: ContractInstances, signer: ethers.Signer): Promise<PriceOracle> {
-    const priceOracleAddress = await contractIntances.LendingPoolAddressesProvider.getPriceOracle()
-    return new contracts.PriceOracleFactory(signer).attach(priceOracleAddress)
-}
-
-export async function LendingPoolCoreApproved(tokenId: string, contractIntances: ContractInstances, signer: ethers.Signer): Promise<boolean> {
-    if (tokenId === contractIntances.EthAddress)
-        return true
-    const token = LoadERC20(tokenId, signer)
-    const userAddress = await signer.getAddress()
-    const userBalance = await token.balanceOf(userAddress)
-    const allowance = await token.allowance(userAddress, contractIntances.LendingPoolCore.address)
-    return allowance.gte(userBalance)
-}
-
-export async function ApproveLendingPoolCore(tokenId: string, contractIntances: ContractInstances, signer: ethers.Signer): Promise<ethers.ContractTransaction | false> {
-    if (tokenId === contractIntances.EthAddress)
-        return false
-    const token = LoadERC20(tokenId, signer)
-    return token.approve(contractIntances.LendingPoolCore.address, UINTMAX)
-}
-
-export async function TokenAPY(reserveAddress: string, contracts: ContractInstances): Promise<string> {
-    return (await contracts.LendingPoolCore.getReserveCurrentLiquidityRate(reserveAddress))
-        .toString()
-        .fromRAY()
-        .asPercentage()
-}
-
-export async function getAvailableBorrows(reserveAddress: string, contracts: ContractInstances, wallet: ethersMetamask): Promise<string> {
-
-    const oracle = await GetPriceOracle(contracts, wallet.signer)
-    const account = await wallet.signer.getAddress()
-
-    //Protect again underflow error in getUserAccountData
-    const userGlobalData = await contracts.LendingPoolDataProvider.calculateUserGlobalData(account)
-    const availabelBorrowsEth = userGlobalData.totalCollateralBalanceETH.mul(userGlobalData.currentLtv).div(100)
-    const feeAdjustedBorrows = userGlobalData.totalBorrowBalanceETH.add(userGlobalData.totalFeesETH)
-    if (availabelBorrowsEth.lt(feeAdjustedBorrows))
-        return "0"
-
-    const userData = await contracts.LendingPoolDataProvider.getUserAccountData(account)
-
-    const availableEthBorrows = userData.availableBorrowsETH
-    const ethPriceOfToken = (await oracle?.getAssetPrice(reserveAddress))
-    if (!ethPriceOfToken)
-        return "price not set"
-    if (ethPriceOfToken.isZero())
-        return "price not set"
-
-    const theoreticalTotalAvailable = availableEthBorrows.div(ethPriceOfToken).mul(WADstring)
-    const reserveData = (await contracts.LendingPoolDataProvider.getReserveData(reserveAddress))
-    const availableLiquidity = reserveData.availableLiquidity.toString()
-    const smaller = theoreticalTotalAvailable.gt(availableLiquidity) ? availableLiquidity : theoreticalTotalAvailable
-    return weiToEthString(smaller)
-}
 
 export async function GetContracts(signer: ethers.Signer, network: string): Promise<ContractInstances | undefined> {
     if (Object.keys(addresses).filter(key => key === network).length === 0)
         return
-
-    const lendingPoolAddressProvider = new contracts.LendingPoolAddressesProviderFactory(signer).attach(addresses[network]["LendingPoolAddressesProvider"])
-    //an ethers oddity that is necessary
-    const libraryAddress: LendingPoolCoreLibraryAddresses = {
-        ["__CoreLibrary___________________________"]: "0x98Bc70e12eCd10Bf7dd52c27003703A6F96bBFF5"
-    }
-    let LendingPoolConfigurator = new contracts.LendingPoolConfiguratorFactory(signer).attach(await lendingPoolAddressProvider.getLendingPoolConfigurator())
-    let MockFlashLoadnReceiver = new contracts.MockFlashLoanReceiverFactory(signer).attach(addresses[network]["MockFlashLoadnReceiver"])
-    let MockAggregatorBat = new contracts.MockAggregatorBatFactory(signer).attach(addresses[network]["MockAggregatorBat"])
-    let MockAggregatorDai = new contracts.MockAggregatorDaiFactory(signer).attach(addresses[network]["MockAggregatorDai"])
-    let MockAggregatorKnc = new contracts.MockAggregatorKncFactory(signer).attach(addresses[network]["MockAggregatorKnc"])
-    let MockAggregatorLend = new contracts.MockAggregatorLendFactory(signer).attach(addresses[network]["MockAggregatorLend"])
-    let MockAggregatorLink = new contracts.MockAggregatorLinkFactory(signer).attach(addresses[network]["MockAggregatorLink"])
-    let MockAggregatorMana = new contracts.MockAggregatorManaFactory(signer).attach(addresses[network]["MockAggregatorMana"])
-    let MockAggregatorMkr = new contracts.MockAggregatorMkrFactory(signer).attach(addresses[network]["MockAggregatorMkr"])
-    let MockAggregatorRep = new contracts.MockAggregatorRepFactory(signer).attach(addresses[network]["MockAggregatorRep"])
-    let MockAggregatorSusd = new contracts.MockAggregatorSusdFactory(signer).attach(addresses[network]["MockAggregatorSusd"])
-    let MockAggregatorTusd = new contracts.MockAggregatorTusdFactory(signer).attach(addresses[network]["MockAggregatorTusd"])
-    let MockAggregatorUsdc = new contracts.MockAggregatorUsdcFactory(signer).attach(addresses[network]["MockAggregatorUsdc"])
-    let MockAggregatorUsdt = new contracts.MockAggregatorUsdtFactory(signer).attach(addresses[network]["MockAggregatorUsdt"])
-    let MockAggregatorWbtc = new contracts.MockAggregatorWbtcFactory(signer).attach(addresses[network]["MockAggregatorWbtc"])
-    let MockAggregatorZrx = new contracts.MockAggregatorZrxFactory(signer).attach(addresses[network]["MockAggregatorZrx"])
-    let PriceOracle = new contracts.PriceOracleFactory(signer).attach(await lendingPoolAddressProvider.getPriceOracle())
-    let LendingRateOracle = new contracts.LendingRateOracleFactory(signer).attach(await lendingPoolAddressProvider.getLendingRateOracle())
-    let LendingPool = new contracts.LendingPoolFactory(signer).attach(await lendingPoolAddressProvider.getLendingPool())
-
-    let LendingPoolCore = new contracts.LendingPoolCoreFactory(libraryAddress, signer).attach(await lendingPoolAddressProvider.getLendingPoolCore())
-    let LendingPoolDataProvider = new contracts.LendingPoolDataProviderFactory(signer).attach(await lendingPoolAddressProvider.getLendingPoolDataProvider())
-    let LendingPoolLiquidationManager = new contracts.LendingPoolLiquidationManagerFactory(signer).attach(await lendingPoolAddressProvider.getLendingPoolLiquidationManager())
-    let FeeProvider = new contracts.FeeProviderFactory(signer).attach(await lendingPoolAddressProvider.getFeeProvider())
-    let TokenDistributor = new contracts.TokenDistributorFactory(signer).attach(await lendingPoolAddressProvider.getTokenDistributor())
-    let LendingPoolParametersProvider = new contracts.LendingPoolParametersProviderFactory(signer).attach(await lendingPoolAddressProvider.getLendingPoolParametersProvider())
 
     let Token = new contracts.PampTokenFactory(signer).attach(addresses[network]["PampToken"])
     let Stake = new contracts.PampStakingFactory(signer).attach(addresses[network]["Stake"])
 
     return {
         Token,
-        Stake,
-        LendingPoolAddressesProvider: lendingPoolAddressProvider,
-        LendingPoolConfigurator,
-        MockFlashLoadnReceiver,
-        MockAggregatorBat,
-        MockAggregatorDai,
-        MockAggregatorKnc,
-        MockAggregatorLend,
-        MockAggregatorLink,
-        MockAggregatorMana,
-        MockAggregatorMkr,
-        MockAggregatorRep,
-        MockAggregatorSusd,
-        MockAggregatorTusd,
-        MockAggregatorUsdc,
-        MockAggregatorUsdt,
-        MockAggregatorWbtc,
-        MockAggregatorZrx,
-        PriceOracle,
-        LendingRateOracle,
-        LendingPool,
-        LendingPoolCore,
-        LendingPoolDataProvider,
-        LendingPoolLiquidationManager,
-        FeeProvider,
-        TokenDistributor,
-        LendingPoolParametersProvider,
-        EthAddress: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+        Stake
     }
 }
 
@@ -297,17 +145,6 @@ export enum Role {
     lendingPoolManager,
     superAdmin,
     user
-}
-
-export const GetRole = async (address: string, contracts: ContractInstances): Promise<Role> => {
-    const isOwner = await contracts.LendingPoolAddressesProvider.isOwner({ from: address })
-    const isLendingPoolManager = (await contracts.LendingPoolAddressesProvider.getLendingPoolManager()).toLowerCase() === address.toLowerCase()
-
-    return isOwner && isLendingPoolManager ?
-        Role.superAdmin :
-        (!isOwner && !isLendingPoolManager ?
-            Role.user :
-            (!isOwner ? Role.lendingPoolManager : Role.addressesProviderOwner))
 }
 
 export type BlockchainTransaction = ethers.ContractTransaction

@@ -64,7 +64,6 @@ const _abi = [
     type: "event"
   },
   {
-    constant: true,
     inputs: [],
     name: "totalSupply",
     outputs: [
@@ -74,12 +73,10 @@ const _abi = [
         type: "uint256"
       }
     ],
-    payable: false,
     stateMutability: "view",
     type: "function"
   },
   {
-    constant: true,
     inputs: [
       {
         internalType: "address",
@@ -95,12 +92,10 @@ const _abi = [
         type: "uint256"
       }
     ],
-    payable: false,
     stateMutability: "view",
     type: "function"
   },
   {
-    constant: false,
     inputs: [
       {
         internalType: "address",
@@ -121,12 +116,10 @@ const _abi = [
         type: "bool"
       }
     ],
-    payable: false,
     stateMutability: "nonpayable",
     type: "function"
   },
   {
-    constant: true,
     inputs: [
       {
         internalType: "address",
@@ -147,12 +140,10 @@ const _abi = [
         type: "uint256"
       }
     ],
-    payable: false,
     stateMutability: "view",
     type: "function"
   },
   {
-    constant: false,
     inputs: [
       {
         internalType: "address",
@@ -173,12 +164,10 @@ const _abi = [
         type: "bool"
       }
     ],
-    payable: false,
     stateMutability: "nonpayable",
     type: "function"
   },
   {
-    constant: false,
     inputs: [
       {
         internalType: "address",
@@ -204,7 +193,6 @@ const _abi = [
         type: "bool"
       }
     ],
-    payable: false,
     stateMutability: "nonpayable",
     type: "function"
   }

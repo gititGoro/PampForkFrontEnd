@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Redirect } from "react-router-dom";
 import { ListItem, ListItemIcon, makeStyles, createStyles, Theme } from '@material-ui/core'
 import Staking from '../../../images/staking.png'
+import SupervisorAccountIcon from '@material-ui/icons/SupervisorAccount';
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -18,7 +19,7 @@ const useStyles = makeStyles((theme: Theme) =>
                 backgroundColor: theme.listHoverColor[theme.palette.type],
             },
             zIndex: 0,
-            paddingLeft:0
+            paddingLeft: 0
         },
         listItemSelected: {
             zIndex: 0,
@@ -26,11 +27,11 @@ const useStyles = makeStyles((theme: Theme) =>
             '&:hover': {
                 backgroundColor: theme.listHoverColor[theme.palette.type],
             },
-            paddingLeft:5
+            paddingLeft: 5
         }
         , icon: {
             color: "green",
-           // marginRight: 10
+            // marginRight: 10
         },
         divider: {
             background: "rgba(255,255,255,0.8)"
@@ -58,7 +59,7 @@ export default function ShortcutButtons(props: { expanded: boolean, isAdmin: boo
 
     const selectionFactory = classSetterFactory(classes.listItem, classes.listItemSelected)
     const classDecider = selectionFactory(location)
-    const [redirectURL, setRedirectURL] = useState<'' | 'staking'>("")
+    const [redirectURL, setRedirectURL] = useState<'' | 'staking' | 'admin'>("")
 
     if (location.pathname.length > 1 && location.pathname.substring(1) === redirectURL) {
         setRedirectURL('')
@@ -72,6 +73,11 @@ export default function ShortcutButtons(props: { expanded: boolean, isAdmin: boo
             </ListItemIcon>
             {showText("Staking")}
         </ListItem>
+        {props.isAdmin ? <ListItem className={classDecider("admin")} button key="admin" onClick={() => setRedirectURL('admin')}>
+            <ListItemIcon>
+                <SupervisorAccountIcon className={classes.icon} />
+            </ListItemIcon>
+        </ListItem> : ""}
     </div>
 }
 
