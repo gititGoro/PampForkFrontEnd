@@ -3,7 +3,7 @@ import * as API from "../../blockchain/EthereumAPI"
 import ContractInstances from '../../blockchain/ContractInstances'
 import { createContext, useState, useEffect, useCallback } from "react"
 
-interface blockchainProps {
+export interface BlockchainProps {
     metamaskConnections: API.ethersMetamask
     contracts: ContractInstances
     account: string
@@ -11,15 +11,15 @@ interface blockchainProps {
 
 type Status = 'Metamask Missing' | 'window.ethereum not found' | 'Application not connected to Metamask' | 'window.ethereum injected by Metmask' | 'Successfully connected to Metmask' | 'Unsupported Network'
 
-interface ethereumContextProps {
-    blockchain?: blockchainProps
+export interface EthereumContextProps {
+    blockchain?: BlockchainProps
     connectionStatus: Status
     network: string
     requestConnection: () => void
     requestDisconnection: () => void
 }
 
-let EthereumContext = createContext<ethereumContextProps>({
+let EthereumContext = createContext<EthereumContextProps>({
     connectionStatus: 'Metamask Missing',
     network: '',
     requestConnection: () => console.log('unitialized'),
@@ -141,18 +141,18 @@ function EthereumContextProvider(props: providerProps) {
         requestConnectionCallback()
     })
 
-    let blockchain: (blockchainProps | undefined)
+    let blockchain: (BlockchainProps | undefined)
     if (contractInstances && metamask) {
         blockchain = { contracts: contractInstances, metamaskConnections: metamask, account }
     }
-    let contextProps: ethereumContextProps = {
+    let contextProps: EthereumContextProps = {
         blockchain,
         connectionStatus,
         network,
         requestConnection: () => setRequestConnection(true),
         requestDisconnection: () => { setMetamask(undefined); setConnectionStatus('Application not connected to Metamask'); blockchain = undefined }
     }
-    EthereumContext = createContext<ethereumContextProps>(contextProps)
+    EthereumContext = createContext<EthereumContextProps>(contextProps)
 
     return <EthereumContext.Provider value={contextProps}>{props.children}</EthereumContext.Provider>
 }

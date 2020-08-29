@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState } from 'react';
 import {
     makeStyles,
     createStyles,
@@ -11,7 +11,8 @@ import {
     TableContainer,
     TableCell,
     Card,
-    Button
+    Button,
+    Tooltip
 } from '@material-ui/core';
 import MonetizationOnIcon from '@material-ui/icons/MonetizationOn';
 import TrendingUpIcon from '@material-ui/icons/TrendingUp';
@@ -21,7 +22,9 @@ import AccountBalanceWalletIcon from '@material-ui/icons/AccountBalanceWallet';
 import TodayIcon from '@material-ui/icons/Today';
 import FreeBreakfastIcon from '@material-ui/icons/FreeBreakfast';
 import LocalAtmIcon from '@material-ui/icons/LocalAtm';
-import { EthereumContext } from 'src/components/contexts/EthereumContext';
+import { BlockchainProps } from 'src/components/contexts/EthereumContext';
+import { blockchainCallback } from '../../../../util/Reacthelpers'
+import { BigNumber } from 'bignumber.js';
 
 const useStyles = makeStyles(theme => createStyles({
     root: {
@@ -31,7 +34,6 @@ const useStyles = makeStyles(theme => createStyles({
         margin: 20
     },
     cell: {
-        // width: '80%'
     }
 }))
 
@@ -40,6 +42,11 @@ interface props {
 }
 
 export default function Staking(props: props) {
+    const [balance, setBalance] = useState<string>("")
+    const [totalSupply, setTotalSupply] = useState<string>("")
+    const [unclaimedRewards, setUnclaimedRewards] = useState<string>("")
+    const unclaimedBig = new BigNumber(unclaimedRewards)
+    const rewardsToClaim = !unclaimedBig.isNaN() && unclaimedBig.gt(0)
     const classes = useStyles()
     return <div className={classes.root}>
         <Grid
@@ -56,10 +63,10 @@ export default function Staking(props: props) {
                 <NetworkStatistics />
             </Grid>
             <Grid item>
-                <MyStatistics />
+                <MyStatistics unclaimedRewards={unclaimedRewards} setUnclaimedRewards={setUnclaimedRewards} totalSupply={totalSupply} setTotalSupply={setTotalSupply} balance={balance} setBalance={setBalance} />
             </Grid>
             <Grid item>
-                <ActionPanel />
+                <ActionPanel rewardsToClaim={rewardsToClaim} />
             </Grid>
         </Grid>
     </div>
@@ -96,7 +103,7 @@ const getDuration = (now: number, then: number): string => {
     const year = 52 * week
 
     const duration = now - then
-    let timeSuffix = 'seconds'
+    let timeSuffix = 'second'
     let divisor = 1
     if (duration >= year) {
         timeSuffix = 'year'
@@ -120,7 +127,6 @@ const getDuration = (now: number, then: number): string => {
 }
 
 function TokenSummary() {
-    const ethereumContextProps = useContext(EthereumContext)
     const classes = tokenSummaryStyles()
     const StyledCell = (props: { children: any }) => <TableCell className={classes.cell}>{props.children}</TableCell>
     const StyledDivider = () => <Divider className={classes.divider} variant='inset' />
@@ -129,32 +135,24 @@ function TokenSummary() {
     const [volume, setVolume] = useState<string>("")
     const [change, setChange] = useState<string>("")
 
-    const summaryCallback = useCallback(async () => {
-        if (ethereumContextProps.blockchain) {
-            const blockchain = ethereumContextProps.blockchain
-            const lastUpdate = await blockchain.contracts.Stake.lastUpdate()
-            const now = Math.round(new Date().getTime() / 1000);
-            setHours(getDuration(now, lastUpdate.timestamp.toNumber()))
-            setPrice('$' + lastUpdate.price.toString())
-            setVolume('$' + lastUpdate.volume)
+    blockchainCallback(async (blockchain: BlockchainProps) => {
+        const lastUpdate = await blockchain.contracts.Stake.lastUpdate()
+        const now = Math.round(new Date().getTime() / 1000);
+        setHours(getDuration(now, lastUpdate.timestamp.toNumber()))
+        setPrice('$' + lastUpdate.price.toString())
+        setVolume('$' + lastUpdate.volume)
 
-            const updateLength = blockchain.contracts.Stake.updates.length
-            if (updateLength > 1) {
-                const priorPrice = (await blockchain.contracts.Stake.updates(updateLength - 2)).price.toNumber()
-                if (priorPrice > 0) {
-                    setChange(`${(lastUpdate.price.toNumber() - priorPrice) / priorPrice} %`)
-                }
+        const updates = await blockchain.contracts.Stake.updates(1)
+
+        if (updates.numerator.toNumber() > 1) {
+            const priorPrice = 3//(await blockchain.contracts.Stake.updates(updates.length - 2)).price.toNumber()
+
+            if (priorPrice > 0) {
+                setChange(`${(lastUpdate.price.toNumber() - priorPrice) / priorPrice} %`)
             }
         }
-    }, [ethereumContextProps.blockchain])
+    })
 
-    useEffect(() => {
-        summaryCallback()
-    }, [ethereumContextProps.blockchain])
-    /*
-    last rewards update stake.update(length)
-    last update: stake.update(length) for price, volume and change
-    */
     return <Grid
         container
         direction="column"
@@ -242,28 +240,30 @@ const icons = [<MonetizationOnIcon />, <TrendingUpIcon />, <AccountBalanceIcon /
 interface cardProps {
     iconType: CardIconTypes,
     header: string,
-    value: string
+    value: string,
+    title?: string
 }
 
 function CardedCell(props: cardProps) {
-    console.log(icons.length)
     const classes = cardRowStyles()
     return (
-        <Grid item>
-            <Card className={classes.Card}>
-                <Grid
-                    container
-                    direction="column"
-                    justify="flex-start"
-                    alignItems="flex-start"
-                    spacing={5}
-                >
-                    <Grid item>{icons[props.iconType]}</Grid>
-                    <Grid item>{props.header}</Grid>
-                    <Grid item>{props.value}</Grid>
-                </Grid>
-            </Card>
-        </Grid>)
+        <Tooltip title={props.title || ''}>
+            <Grid item>
+                <Card className={classes.Card}>
+                    <Grid
+                        container
+                        direction="column"
+                        justify="flex-start"
+                        alignItems="flex-start"
+                        spacing={5}
+                    >
+                        <Grid item>{icons[props.iconType]}</Grid>
+                        <Grid item>{props.header}</Grid>
+                        <Grid item>{props.value}</Grid>
+                    </Grid>
+                </Card>
+            </Grid>
+        </Tooltip>)
 }
 
 interface cardRowProps {
@@ -296,23 +296,55 @@ function CardRow(props: cardRowProps) {
 }
 
 function NetworkStatistics() {
+    const [totalSupply, setTotalSupply] = useState<string>('')
+    const [numStakers, setNumStakers] = useState<string>('')
+
+    blockchainCallback(async (blockchain) => {
+        setTotalSupply((await blockchain.contracts.Token.totalSupply()).toString().fromWAD())
+        setNumStakers((await blockchain.contracts.Stake.numStakers()).toString())
+
+    })
+
     return (
         <CardRow title="Network statistics">
-            <CardedCell iconType={CardIconTypes.MonetizationOn} header="Pamp price" value="$10" />
-            <CardedCell iconType={CardIconTypes.TrendingUp} header="24H volume" value="$3000" />
-            <CardedCell iconType={CardIconTypes.AccountBalance} header="Total Supply" value="1.2 million" />
-            <CardedCell iconType={CardIconTypes.PanTool} header="Stakers" value="7452" />
+            <CardedCell iconType={CardIconTypes.MonetizationOn} header="Pamp price" value="<placeholder>" title="This data will be supplied via an external API call" />
+            <CardedCell iconType={CardIconTypes.TrendingUp} header="24H volume" value="<placeholder>" title="This data will be supplied via an external API call" />
+            <CardedCell iconType={CardIconTypes.AccountBalance} header="Total Supply" value={totalSupply} />
+            <CardedCell iconType={CardIconTypes.PanTool} header="Stakers" value={numStakers} />
         </CardRow>
     )
 }
 
-function MyStatistics() {
+interface myStatsProps {
+    balance: string
+    setBalance: (s: string) => void,
+    totalSupply: string
+    setTotalSupply: (t: string) => void
+    unclaimedRewards: string
+    setUnclaimedRewards: (r: string) => void
+}
+
+function MyStatistics(props: myStatsProps) {
+    const [daysStaked, setDaysStaked] = useState<string>("")
+
+
+    blockchainCallback(async (blockchain) => {
+        const bal = await (await blockchain.contracts.Token.balanceOf(blockchain.account)).toString().fromWAD()
+        props.setBalance(bal)
+        setDaysStaked(await (await blockchain.contracts.Stake.getDaysStaked(blockchain.account)).div(86400).toString())
+        const currentStaker = await blockchain.contracts.Stake.stakers(blockchain.account)
+        const tSupply = await (await blockchain.contracts.Token.totalSupply()).toString()
+        props.setTotalSupply(tSupply)
+        const reward = await blockchain.contracts.Stake.iterativelyCalculateOwedRewards(currentStaker.lastTimestamp, currentStaker.startTimestamp, bal.toWAD(), blockchain.account, tSupply)
+        props.setUnclaimedRewards(reward.toString().fromWAD())
+
+    })
+
     return (
         <CardRow title="My statistics">
-            <CardedCell iconType={CardIconTypes.Wallet} header="Pamp balance" value="12 PAMP" />
-            <CardedCell iconType={CardIconTypes.Calendar} header="Days staked" value="0" />
-            <CardedCell iconType={CardIconTypes.Coffee} header="Unclaimed rewards" value="13 PAMP" />
-            <CardedCell iconType={CardIconTypes.Atm} header="Next expected reward" value="0.2 PAMP" />
+            <CardedCell iconType={CardIconTypes.Wallet} header="Pamp balance" value={props.balance} />
+            <CardedCell iconType={CardIconTypes.Calendar} header="Days staked" value={daysStaked} />
+            <CardedCell iconType={CardIconTypes.Coffee} header="Unclaimed rewards" value={props.unclaimedRewards} />
         </CardRow>
     )
 }
@@ -324,16 +356,39 @@ const actionStyles = makeStyles(theme => createStyles({
     }
 }))
 
-function ActionPanel() {
+function ActionPanel(props: { rewardsToClaim: boolean }) {
+    const [claimClicked, setClaimClicked] = useState<boolean>(false)
+    const [migrateClicked, setMigrateClicked] = useState<boolean>(false)
+    const [hasMigrated, setHasMigrated] = useState<boolean>(true)
+
+    blockchainCallback(async (blockchain) => {
+        if (claimClicked) {
+            await blockchain.contracts.Token.updateMyStakes()
+            setClaimClicked(false)
+        }
+        if (migrateClicked) {
+            await blockchain.contracts.Stake.migratePreviousState()
+            setMigrateClicked(false)
+        }
+    }, [claimClicked, migrateClicked])
+
+    blockchainCallback(async (blockchain) => {
+        const staker = await blockchain.contracts.Stake.stakers(blockchain.account)
+        setHasMigrated(staker.hasMigrated)
+    })
+
     const classes = actionStyles()
     return <Grid
         container
         direction="row"
         justify="space-around"
         alignItems="center"
-    >
-        <Grid item>
-            <Button className={classes.button} variant='outlined' onClick={() => alert('claiming')} >Claim rewards</Button>
-        </Grid>
+        spacing={4}>
+        {props.rewardsToClaim ? <Grid item>
+            <Button className={classes.button} variant='outlined' onClick={() => setClaimClicked(true)} >Claim rewards</Button>
+        </Grid> : ""}
+        {!hasMigrated ? <Grid item>
+            <Button className={classes.button} variant='outlined' onClick={() => setMigrateClicked(true)} >Migrate Staking Time</Button>
+        </Grid> : ""}
     </Grid>
 }

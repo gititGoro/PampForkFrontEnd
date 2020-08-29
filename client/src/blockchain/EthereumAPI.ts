@@ -15,6 +15,7 @@ declare global {
     interface String {
         fromRAY(): string
         fromWAD(): string
+        toWAD():string
         asPercentage(): string
         truncBig(): string
         dropDecimals(): string
@@ -35,6 +36,15 @@ function fixedPoint(precisionString: string) {
 
 String.prototype.fromRAY = fixedPoint(RAYstring)
 String.prototype.fromWAD = fixedPoint(WADstring)
+String.prototype.toWAD = function(){
+    const big = new BigNumber(this.toString())
+    if(big.isNaN())
+    return ""
+
+    return big.times(WADstring)
+    .toString()
+    .dropDecimals()
+}
 String.prototype.asPercentage = function () {
     const big = new BigNumber(this.toString())
     if (big.isNaN())
